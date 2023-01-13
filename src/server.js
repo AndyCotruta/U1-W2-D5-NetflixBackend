@@ -9,11 +9,26 @@ import {
   unauthorizedHandler,
 } from "./errorHandlers.js";
 import { publicFolderPath } from "./lib/fs-tools.js";
+import createHttpError from "http-errors";
 
 const server = express();
 const port = process.env.PORT;
 
-server.use(cors());
+const whitelist = [process.env.FE_DEV_URL, process.env.FE_PROD_URL];
+
+const corsOptions = {
+  origin: (origin, corsNext) => {
+    if (!origin || whitelist.indexOf(origin) !== -1) {
+      corsNext(null, true);
+    } else {
+      corsNext(
+        createHttpError(400, `Origin ${origin} is not in the whitelist`)
+      );
+    }
+  },
+};
+
+server.use(cors(corsOptions));
 server.use(express.json());
 server.use(express.static(publicFolderPath));
 
