@@ -1,6 +1,7 @@
 import fs from "fs-extra";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { promisify } from "util";
 
 const { readJSON, writeJSON, writeFile } = fs;
 

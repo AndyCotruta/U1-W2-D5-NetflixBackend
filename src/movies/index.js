@@ -4,6 +4,9 @@ import uniqid from "uniqid";
 import { checksMovieSchema, triggerMovieBadRequest } from "./validator.js";
 import multer from "multer";
 import { extname, join } from "path";
+import { pipeline } from "stream";
+import { getPDFReadableStream } from "../lib/pdf-tools.js";
+import { request } from "http";
 
 const moviesRouter = express.Router();
 
@@ -100,5 +103,25 @@ moviesRouter.post(
     }
   }
 );
+
+moviesRouter.get("/:movieId/pdf", async (req, res, next) => {
+  try {
+    const movieId = req.params.movieId;
+    const moviesArray = await getMovies();
+    const movie = moviesArray.find((m) => m.imdbID === movieId);
+    const source = getPDFReadableStream(movie);
+    const destination = res;
+    if (movie) {
+      pipeline(source, destination, (err) => {
+        if (err) console.log(err);
+      });
+    } else {
+      next(NotFound(`Movie with id ${movieId} was not found`));
+    }
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
 
 export default moviesRouter;
