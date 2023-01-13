@@ -20,7 +20,11 @@ moviesRouter.get("/:movieId", async (req, res, next) => {
     const movieId = req.params.movieId;
     const moviesArray = await getMovies();
     const searchedMovie = moviesArray.find((m) => m.imdbID === movieId);
-    res.send(searchedMovie);
+    if (searchedMovie) {
+      res.send(searchedMovie);
+    } else {
+      next(NotFound(`Movie with id ${movieId} not found`));
+    }
   } catch (error) {
     console.log(error);
     next(error);
@@ -46,5 +50,22 @@ moviesRouter.post(
     }
   }
 );
+
+moviesRouter.delete("/:movieId", async (req, res, next) => {
+  try {
+    const moviesArray = await getMovies();
+    const movieId = req.params.movieId;
+    const filteredMovieArray = moviesArray.filter((m) => m.imdbID !== movieId);
+    if (filteredMovieArray.length !== moviesArray.length) {
+      await writeMovies(filteredMovieArray);
+      res.status(204).send(`Movie with id ${movieId} was removed successfully`);
+    } else {
+      next(NotFound(`Movie with id ${movieId} not found`));
+    }
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
 
 export default moviesRouter;
