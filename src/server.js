@@ -8,12 +8,14 @@ import {
   notFoundHandler,
   unauthorizedHandler,
 } from "./errorHandlers.js";
+import { publicFolderPath } from "./lib/fs-tools.js";
 
 const server = express();
 const port = process.env.PORT;
 
 server.use(cors());
 server.use(express.json());
+server.use(express.static(publicFolderPath));
 
 server.use("/media", moviesRouter);
 

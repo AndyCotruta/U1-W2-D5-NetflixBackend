@@ -1,7 +1,9 @@
 import express from "express";
-import { getMovies, writeMovies } from "../lib/fs-tools.js";
+import { getMovies, saveMoviePoster, writeMovies } from "../lib/fs-tools.js";
 import uniqid from "uniqid";
 import { checksMovieSchema, triggerMovieBadRequest } from "./validator.js";
+import multer from "multer";
+import { extname, join } from "path";
 
 const moviesRouter = express.Router();
 
@@ -67,5 +69,36 @@ moviesRouter.delete("/:movieId", async (req, res, next) => {
     next(error);
   }
 });
+
+moviesRouter.post(
+  "/:movieId/poster",
+  multer().single("poster"),
+  async (req, res, next) => {
+    try {
+      const fileExtensionType = extname(req.file.originalname);
+      const fileName = req.params.movieId + fileExtensionType;
+      await saveMoviePoster(fileName, req.file.buffer);
+      const posterUrl = `http://localhost:3001/moviesPosters/${fileName}`;
+      const moviesArray = await getMovies();
+      const movieId = req.params.movieId;
+      const oldMovieIndex = moviesArray.findIndex((m) => m.imdbID === movieId);
+      if (oldMovieIndex !== -1) {
+        const oldMovie = moviesArray[oldMovieIndex];
+        const newMovie = {
+          ...oldMovie,
+          poster: posterUrl,
+        };
+        moviesArray[oldMovieIndex] = newMovie;
+        await writeMovies(moviesArray);
+        res.send("The new poster was saved successfully");
+      } else {
+        next(NotFound(`Movie with id ${movieId} was not found`));
+      }
+    } catch (error) {
+      console.log(error);
+      next(error);
+    }
+  }
+);
 
 export default moviesRouter;
